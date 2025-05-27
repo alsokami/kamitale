@@ -26,10 +26,13 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 100, 255)
+GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
 ORANGE = (255, 165, 0)
 GRAY = (200, 200, 200)
 
+radar_on = True    # <<< radar switch (you did have this)
+selected_idx = 0
 clock = pygame.time.Clock()
 
 # game box
@@ -68,6 +71,19 @@ def draw_heart(x, y):
         (x, y + 5), (x + 10, y - 5),
         (x + 20, y + 5), (x + 10, y + 20)
     ])
+
+
+def draw_radar_switch():
+    # draw a small circle on top of the box, centered horizontally
+    radius = 10
+    cx = box_rect.centerx
+    cy = box_rect.top - 30  # above the box
+    color = (255, 0, 0) if radar_on else GREEN  # use green if on, red if off
+    pygame.draw.circle(screen, color, (cx, cy), radius)
+    
+    # optional: draw label below the radar
+    label = get_bold_pixel_font(12).render("DO NOTHING SWITCH", True, WHITE)
+    screen.blit(label, (cx - label.get_width() // 2, cy + radius + 5))
 
 # spawn arrows
 def spawn_arrows(direction, count):
@@ -212,10 +228,10 @@ def draw_text_inside_button(text, btn, x):
 
 # add these helper functions near the top (with other helpers)
 def game_loop():
+    global radar_on, selected_idx
     global player_x, player_y, arrows_list, score, player_hp, level
     global current_state, pending_swarm, flash_arrow, flash_time, last_swarm_time
-    global arrow_count, arrow_cooldown, selected_idx, game_over
-    global pause_start_time
+    global arrow_count, arrow_cooldown, game_over, pause_start_time
 
     def get_player_speed(score):
         start_speed = 5.7
@@ -243,20 +259,32 @@ def game_loop():
     while True:
         screen.fill(BLACK)
         pygame.draw.rect(screen, GRAY, box_rect, 3)
+        draw_radar_switch()  # add this line
 
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
+            # listen for X to toggle radar
+            if e.type == pygame.KEYDOWN and e.key == pygame.K_x:
+                radar_on = not radar_on  # toggle
+                # if turning off, immediately skip any intermission
+                if not radar_on and current_state == INTERMISSION:
+                    current_state = WAITING
+                    last_swarm_time = pygame.time.get_ticks()
+                    pending_swarm.clear()
+
             if game_over and e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE:
                 return
+
             if current_state == INTERMISSION and e.type == pygame.KEYDOWN:
                 if e.key in (pygame.K_a, pygame.K_LEFT):
                     selected_idx = (selected_idx - 1) % 4
                 if e.key in (pygame.K_d, pygame.K_RIGHT):
                     selected_idx = (selected_idx + 1) % 4
                 if e.key in (pygame.K_z, pygame.K_RETURN):
-                    # confirmed choice, go to WAITING to start next swarm
+                    # confirmed choice, go to next swarm
                     current_state = WAITING
                     last_swarm_time = pygame.time.get_ticks()
                     pending_swarm.clear()
@@ -278,7 +306,6 @@ def game_loop():
         now = pygame.time.get_ticks()
 
         if game_over:
-            # draw game over screen
             pygame.draw.rect(screen, BLACK, (0, 0, WIDTH, HEIGHT))
             go = get_bold_pixel_font(48).render("GAME OVER", True, RED)
             screen.blit(go, go.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 60)))
@@ -348,8 +375,14 @@ def game_loop():
                 draw_heart(player_x, player_y)
                 draw_health_bar()
                 if now - pause_start_time >= breather:
-                    current_state = INTERMISSION
-                    selected_idx = 0
+                    if radar_on:
+                        current_state = INTERMISSION
+                        selected_idx = 0
+                    else:
+                        # radar off → skip intermission
+                        current_state = WAITING
+                        last_swarm_time = pygame.time.get_ticks()
+                        pending_swarm.clear()
 
             elif current_state == INTERMISSION:
                 # show intermission buttons & selection heart
