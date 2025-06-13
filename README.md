@@ -5,7 +5,8 @@ this is a beginner made project. no updates will be scheduled.
 
 # FEATURES
 
-![image](https://github.com/user-attachments/assets/926af2bf-be01-4d63-8346-b9039a0977c6)
+![image](https://github.com/user-attachments/assets/e58cabcc-3ace-48e8-a57e-ba8853f8e729)
+
 
 by version 1.1 - we have added a radar switch that can skip the intermission phase (where the user can use the buttons). 
 the text size offset is still to be changed and fixed soon. we are planning on adding features to each of the buttons soon.
