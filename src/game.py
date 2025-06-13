@@ -1,70 +1,44 @@
+# importing libraries
 import pygame
-from pygame import mixer
+from pygame import mixer # mixer is used to play audoi from pygame
 import random
 import sys
 
-pygame.init()
-pygame.mixer.init()
+pygame.init() # initialize pygame
+pygame.mixer.init() # initialize the music player
 
+# display config
 WIDTH, HEIGHT = 650, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("kamitale")
 
-font_cache = {}
+# font caching - needed. this is used to only take the text needded in frame
+font_cache = {} # create a list of the characters needed for the cache
 def bold_font(size):
     key = f"bold_{size}"
     if key not in font_cache:
-        font_cache[key] = pygame.font.Font("bold_font_8.ttf", size)
-    return font_cache[key]
+        font_cache[key] = pygame.font.Font("bold_font_8.ttf", size) # bold font
+    return font_cache[key] # returns the needed characters from the font
 
-def font(size):
-    return pygame.font.Font("PixelOperator.ttf", size)
+def font(size): return pygame.font.Font("PixelOperator.ttf", size) # get main font
 
-
-def gifframes(path, size):
-    frames = []
-    try:
-        gif = pygame.image.load(path)
-        gif = pygame.transform.scale(gif, size)
-        frames.append(gif)
-    except:
-        import PIL.Image
-        gif = PIL.Image.open(path)
-        for frame in range(gif.n_frames):
-            gif.seek(frame)
-            frame_surface = pygame.image.fromstring(gif.tobytes(), gif.size, gif.mode).convert_alpha()
-            frame_surface = pygame.transform.scale(frame_surface, size)
-            frames.append(frame_surface)
-    return frames
-
-gif_frames = gifframes("enemy_sprite.gif", (100, 100))
-gif_frame_duration = 100
-gif_state = {
-    "current_frame": 0,
-    "last_update": pygame.time.get_ticks()
-}
-
-def update_gif():
-    now = pygame.time.get_ticks()
-    if now - gif_state["last_update"] >= gif_frame_duration:
-        gif_state["current_frame"] = (gif_state["current_frame"] + 1) % len(gif_frames)
-        gif_state["last_update"] = now
-    return gif_frames[gif_state["current_frame"]]
-
+# SFX import
 battleost = mixer.Sound("spider_dance.mp3")
 strikedsfx = mixer.Sound("strike.mp3")
 shattersfx = mixer.Sound("soul_shatter.mp3")
 gameoverost = mixer.Sound("game_over.mp3")
 
-mixer.Channel(1).play(battleost, loops=-1)
+mixer.Channel(1).play(battleost, loops=-1) # play the music ost on the first channel
 
+# color setup - obtainable from the hex color picker on google
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 GRAY = (200, 200, 200)
 
-BOX_SIZE = 250
+# box config
+BOX_SIZE = 250 # size of the box
 box = pygame.Rect((WIDTH - BOX_SIZE) // 2, (HEIGHT - BOX_SIZE) // 2 + 50, BOX_SIZE, BOX_SIZE)
 
 playersize = 20
@@ -192,17 +166,23 @@ def game():
     game_over = False
     pause_start = 0
     
+    radius = 15
+    cx = box.centerx
+    cy = box.top - 30
+    color = (0, 0, 0)
+    enemyimg = pygame.image.load("enemy_sprite.gif")
+    enemy = pygame.transform.scale(enemyimg.convert_alpha(), (radius + 60, radius + 60))
+    
     while True:
         screen.blit(heartimg, (player_x, player_y))
         health_bar()
         buttons()
         
         now = pygame.time.get_ticks()
-
         screen.blit(background, (0, 0))
-        gif_img = update_gif()
-        gif_rect = gif_img.get_rect(center=((WIDTH // 2), ((HEIGHT - 250) // 2 + 50) - 60))
-        screen.blit(gif_img, gif_rect)
+        enemybox = pygame.draw.circle(screen, color, (cx, cy), radius)
+        screen.blit(enemy, (cx - 35, cy - 60))
+        
         screen.blit(heartimg, (player_x, player_y))
         health_bar()
         buttons()
